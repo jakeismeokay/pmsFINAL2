@@ -23,3 +23,4 @@ Provide a project-specific username and password if we need to access your dashb
 Github account:
 *Account name: jakeismeokay
 *Account password: Jakeismeokay2003@
+Jira board link: https://jaketran2212.atlassian.net/jira/software/projects/PMS1/boards/100?sprintStarted=true&sprints=138&atlOrigin=eyJpIjoiOTNmNTk2ODA5OTVhNDFhNWEzMzI2NjkzOWVjMTYwYTMiLCJwIjoiaiJ9
