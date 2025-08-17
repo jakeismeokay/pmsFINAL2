@@ -23,11 +23,9 @@ const logVehicleEntry = async (req, res) => {
       status: "parked",
     });
     if (vehicleAlreadyParked) {
-      return res
-        .status(400)
-        .json({
-          message: "A vehicle with this license plate is already parked",
-        });
+      return res.status(400).json({
+        message: "A vehicle with this license plate is already parked",
+      });
     }
 
     // 3. Create a new vehicle entry record

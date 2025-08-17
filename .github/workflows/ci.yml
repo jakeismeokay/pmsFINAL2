@@ -1,4 +1,4 @@
-name: CI
+name: Parking System Backend CI
 
 on:
     push:
