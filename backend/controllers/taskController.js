@@ -1,56 +1,76 @@
-//get task
-const Task = require("../models/Task");
-const getTasks = async (req, res) => {
+// New Parking Controller
+
+const Vehicle = require("../models/Vehicle");
+const ParkingLot = require("../models/ParkingLot");
+
+/**
+ * @desc    Logs a new vehicle entry and updates available spots
+ * @route   POST /api/parking/entry
+ * @access  Private (e.g., for parking staff)
+ */
+const logVehicleEntry = async (req, res) => {
+  const { licensePlate, parkingSpot } = req.body;
   try {
-    const tasks = await Task.find({ userId: req.user.id });
-    res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-//add task function
-const addTask = async (req, res) => {
-  const { title, description, deadline } = req.body;
-  try {
-    const task = await Task.create({
-      userId: req.user.id,
-      title,
-      description,
-      deadline,
+    // 1. Check if the parking lot has available spots
+    const parkingLot = await ParkingLot.findOne();
+    if (!parkingLot || parkingLot.availableSpots <= 0) {
+      return res.status(400).json({ message: "Parking lot is full" });
+    }
+
+    // 2. Check if a vehicle with the same license plate is already parked
+    const vehicleAlreadyParked = await Vehicle.findOne({
+      licensePlate,
+      status: "parked",
     });
-    res.status(201).json(task);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-//update task
-const updateTask = async (req, res) => {
-  const { title, description, completed, deadline } = req.body;
-  try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: "Task not found" });
+    if (vehicleAlreadyParked) {
+      return res
+        .status(400)
+        .json({
+          message: "A vehicle with this license plate is already parked",
+        });
+    }
 
-    task.title = title || task.title;
-    task.description = description || task.description;
-    task.completed = completed ?? task.completed;
-    task.deadline = deadline || task.deadline;
+    // 3. Create a new vehicle entry record
+    const newVehicle = await Vehicle.create({
+      licensePlate,
+      parkingSpot,
+      entryTime: new Date(),
+    });
 
-    const updatedTask = await task.save();
-    res.json(updatedTask);
+    // 4. Update the available spots in the parking lot
+    parkingLot.availableSpots -= 1;
+    await parkingLot.save();
+
+    res.status(201).json(newVehicle);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-//delete task
-const deleteTask = async (req, res) => {
+
+/**
+ * @desc    Get the current number of available parking slots
+ * @route   GET /api/parking/slots
+ * @access  Public
+ */
+const getAvailableSlots = async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    await task.remove();
-    res.json({ message: "Task deleted" });
+    const parkingLot = await ParkingLot.findOne();
+    if (!parkingLot) {
+      return res
+        .status(404)
+        .json({ message: "Parking lot configuration not found" });
+    }
+
+    res.status(200).json({
+      totalCapacity: parkingLot.totalCapacity,
+      availableSpots: parkingLot.availableSpots,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-module.exports = { getTasks, addTask, updateTask, deleteTask };
-//pms features
+
+module.exports = {
+  logVehicleEntry,
+  getAvailableSlots,
+};
